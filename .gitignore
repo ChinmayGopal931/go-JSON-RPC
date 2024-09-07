@@ -1,0 +1,65 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Environment variables
+.env
+
+# macOS
+.DS_Store
+
+# IDE-specific files
+.idea/
+.vscode/
+
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+
+# Binary output directory
+bin/
+
+# Ethereum related
+*.abi
+*.bin
+
+# Foundry
+out/
+cache/
+artifacts/
+
+# Node (if you're using any Node.js tools)
+node_modules/
+
+# Solidity coverage reports
+coverage/
+coverage.json
+
+# Hardhat (if you're using it alongside Foundry)
+artifacts-hardhat/
+cache-hardhat/
+
+# Misc
+*.swp
+*.swo

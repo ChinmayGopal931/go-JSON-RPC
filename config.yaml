@@ -1,0 +1,34 @@
+# Ethereum Network Configuration
+ethereum_node_url: "http://localhost:8545"
+chain_id: 31337  # Local development chain ID
+
+# Contract Addresses
+swap_router_address: "0x86A2EE8FAf9A840F7a2c64CA3d51209F9A02081D"
+lp_router_address: "0x4631BCAbD6dF18D94796344963cB60d44a4136b6"
+manager_address: "0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9"
+hook_address: "0x98ECD70c8D9D6363be452f5c1113D574b78eCAc0"
+
+# Account Configuration
+private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+# API Server Configuration
+server_host: "localhost"
+server_port: 8080
+
+# Gas Configuration
+gas_limit: 500000
+gas_price: 20  # 20 Gwei
+
+# Token Addresses
+token0_address: "0x0355B7B8cb128fA5692729Ab3AAa199C1753f726"
+token1_address: "0x202CCe504e04bEd6fC0521238dDf04Bc9E8E15aB"
+
+# Pool Configuration
+default_fee: 3000
+default_tick_spacing: 60
+
+# Logging
+log_level: "debug"
+
+# Environment
+environment: "development"

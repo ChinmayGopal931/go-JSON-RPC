@@ -11,20 +11,20 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load()
+	CFG_TEST, err := config.Load()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
-	log.Println(cfg.EthereumNodeURL)
-	if err := ethereum.InitClient(cfg.EthereumNodeURL); err != nil {
+	log.Println(CFG_TEST.EthereumNodeURL)
+	if err := ethereum.InitClient(CFG_TEST.EthereumNodeURL); err != nil {
 		log.Fatalf("Failed to initialize Ethereum client: %v", err)
 	}
 
-	if err := ethereum.SetPrivateKey(cfg.PrivateKey); err != nil {
+	if err := ethereum.SetPrivateKey(CFG_TEST.PrivateKey); err != nil {
 		log.Fatalf("Failed to set private key: %v", err)
 	}
 
-	if err := ethereum.InitContracts(cfg); err != nil {
+	if err := ethereum.InitContracts(CFG_TEST); err != nil {
 		log.Fatalf("Failed to initialize contracts: %v", err)
 	}
 
@@ -32,6 +32,6 @@ func main() {
 	router := gin.Default()
 	routes.SetupRoutes(router)
 
-	log.Printf("Server starting on %s", cfg.ServerAddress)
-	log.Fatal(router.Run(cfg.ServerAddress))
+	log.Printf("Server starting on %s", CFG_TEST.ServerAddress)
+	log.Fatal(router.Run(CFG_TEST.ServerAddress))
 }

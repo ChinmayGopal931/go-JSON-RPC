@@ -5,39 +5,62 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"time"
 	"uniswap-v4-rpc/internal/ethereum"
 	"uniswap-v4-rpc/pkg/utils"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gin-gonic/gin"
 )
 
+type AddLiquidityRequest struct {
+	Currency0       string `json:"currency0"`
+	Currency1       string `json:"currency1"`
+	MinTick         string `json:"minTick"`
+	MaxTick         string `json:"maxTick"`
+	LiquidityAmount string `json:"liquidityAmount"`
+	UserAddress     string `json:"userAddress"`
+	Deadline        string `json:"deadline"`
+	V0              uint8  `json:"v0"`
+	R0              string `json:"r0"`
+	S0              string `json:"s0"`
+	V1              uint8  `json:"v1"`
+	R1              string `json:"r1"`
+	S1              string `json:"s1"`
+}
+
 func AddLiquidityPermit(c *gin.Context) {
-	// Hardcoded values (replace with actual values from your environment)
-	currency0 := common.HexToAddress("0xAA292E8611aDF267e563f334Ee42320aC96D0463")
-	currency1 := common.HexToAddress("0xf953b3A269d80e3eB0F2947630Da976B896A8C5b")
+	var req AddLiquidityRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid request body: " + err.Error()})
+		return
+	}
 
-	fee := big.NewInt(3000)
-	tickSpacing := big.NewInt(60)
-
-	minTick := big.NewInt(-887220)
-	maxTick := big.NewInt(887220)
-	liquidityAmount, _ := new(big.Int).SetString("100000000000000000000", 10) // 100 ether
-
-	log.Printf("Adding liquidity with the following parameters:")
-	log.Printf("Currency0: %s", currency0.Hex())
-	log.Printf("Currency1: %s", currency1.Hex())
-	log.Printf("Fee: %s", fee.String())
-	log.Printf("TickSpacing: %s", tickSpacing.String())
-	log.Printf("LiquidityAmount: %s", liquidityAmount.String())
-
-	userAddress, userPrivKey := utils.MakeAddrAndKey("alice")
-	fmt.Printf("User's address: %s\n", userAddress.Hex())
-	fmt.Printf("User's private key: 0x%x\n", crypto.FromECDSA(userPrivKey))
+	// Convert string inputs to appropriate types
+	currency0 := common.HexToAddress(req.Currency0)
+	currency1 := common.HexToAddress(req.Currency1)
+	minTick, success := new(big.Int).SetString(req.MinTick, 10)
+	if !success {
+		c.JSON(400, gin.H{"error": "Invalid minTick value"})
+		return
+	}
+	maxTick, success := new(big.Int).SetString(req.MaxTick, 10)
+	if !success {
+		c.JSON(400, gin.H{"error": "Invalid maxTick value"})
+		return
+	}
+	liquidityAmount, success := new(big.Int).SetString(req.LiquidityAmount, 10)
+	if !success {
+		c.JSON(400, gin.H{"error": "Invalid liquidityAmount value"})
+		return
+	}
+	userAddress := common.HexToAddress(req.UserAddress)
+	deadline, success := new(big.Int).SetString(req.Deadline, 10)
+	if !success {
+		c.JSON(400, gin.H{"error": "Invalid deadline value"})
+		return
+	}
 
 	// Create the pool key
 	poolKey := createPoolKey(currency0, currency1, ethereum.HookAddress)
@@ -55,29 +78,11 @@ func AddLiquidityPermit(c *gin.Context) {
 		Salt:           [32]byte{},
 	}
 
-	// Prepare permit data
-	deadline := big.NewInt(time.Now().Unix() + 3600) // 1 hour from now
-	value := new(big.Int).Set(liquidityAmount)       // Use liquidityAmount as the value for both tokens
-
-	log.Printf("Token0 Address: %s", currency0.Hex())
-	log.Printf("Token1 Address: %s", currency1.Hex())
-	log.Printf("LPRouter Address: %s", ethereum.LPRouterAddress.Hex())
-	log.Printf("User Address: %s", userAddress.Hex())
-	log.Printf("Value: %s", value.String())
-	log.Printf("Deadline: %s", deadline.String())
-
-	// Generate permit signatures for both tokens
-	v0, r0, s0, err := utils.GeneratePermitSignature(currency0, userAddress, ethereum.LPRouterAddress, value, deadline, userPrivKey)
-	if err != nil {
-		c.JSON(500, gin.H{"error": fmt.Sprintf("Failed to generate permit signature for token0: %v", err)})
-		return
-	}
-
-	v1, r1, s1, err := utils.GeneratePermitSignature(currency1, userAddress, ethereum.LPRouterAddress, value, deadline, userPrivKey)
-	if err != nil {
-		c.JSON(500, gin.H{"error": fmt.Sprintf("Failed to generate permit signature for token1: %v", err)})
-		return
-	}
+	// Convert signature components
+	r0 := common.HexToHash(req.R0)
+	s0 := common.HexToHash(req.S0)
+	r1 := common.HexToHash(req.R1)
+	s1 := common.HexToHash(req.S1)
 
 	// Pack the data for the modifyLiquidityWithPermit function call
 	data, err := ethereum.LPRouterABI.Pack("modifyLiquidityWithPermit",
@@ -88,16 +93,24 @@ func AddLiquidityPermit(c *gin.Context) {
 		false,    // settleUsingBurn
 		false,    // takeClaims
 		deadline,
-		v0, r0, s0,
-		v1, r1, s1,
+		req.V0, r0, s0,
+		req.V1, r1, s1,
 	)
 	if err != nil {
-		c.JSON(500, gin.H{"error": fmt.Sprintf("Error packing data: %v", err)})
+		c.JSON(500, gin.H{"error": "Error packing data: " + err.Error()})
 		return
 	}
 
-	chainID, _ := ethereum.Client.ChainID(context.Background())
-	auth, _ := bind.NewKeyedTransactorWithChainID(ethereum.PrivateKey, chainID)
+	chainID, err := ethereum.Client.ChainID(context.Background())
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Error getting chain ID: " + err.Error()})
+		return
+	}
+	auth, err := bind.NewKeyedTransactorWithChainID(ethereum.PrivateKey, chainID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Error creating transactor: " + err.Error()})
+		return
+	}
 
 	balance0Before, err := utils.GetBalance(currency0, userAddress)
 	if err != nil {

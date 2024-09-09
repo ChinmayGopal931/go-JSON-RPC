@@ -17,21 +17,44 @@ import (
 )
 
 func SwapPermit(c *gin.Context) {
-	// Hardcoded values (replace with actual values from your environment)
-	currency0 := common.HexToAddress("0xAA292E8611aDF267e563f334Ee42320aC96D0463")
-	currency1 := common.HexToAddress("0xf953b3A269d80e3eB0F2947630Da976B896A8C5b")
+	var req struct {
+		Currency0   string `json:"currency0" binding:"required"`
+		Currency1   string `json:"currency1" binding:"required"`
+		Amount      string `json:"amount" binding:"required"`
+		ZeroForOne  bool   `json:"zeroForOne"`
+		UserAddress string `json:"userAddress" binding:"required"`
+		PrivateKey  string `json:"privateKey" binding:"required"`
+	}
 
-	zeroForOne := true
-	amountSpecified, _ := new(big.Int).SetString("10000000", 10) // 1 ether
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
 
+	userAddress1, alicePrivKey1 := utils.MakeAddrAndKey("alice")
+	fmt.Printf("Alice's address: %s\n", userAddress1.Hex())
+	fmt.Printf("Alice's private key: 0x%x\n", crypto.FromECDSA(alicePrivKey1))
+	fmt.Printf("Alice's private key: 0x%x\n", alicePrivKey1)
+
+	currency0 := common.HexToAddress(req.Currency0)
+	currency1 := common.HexToAddress(req.Currency1)
+	amountSpecified, ok := new(big.Int).SetString(req.Amount, 10)
+	if !ok {
+		c.JSON(400, gin.H{"error": "Invalid amount"})
+		return
+	}
+	userAddress := common.HexToAddress(req.UserAddress)
+	alicePrivKey, err := crypto.HexToECDSA(req.PrivateKey)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid private key"})
+		return
+	}
+
+	zeroForOne := req.ZeroForOne
 	sqrtPriceLimitX96, _ := new(big.Int).SetString("4295128740", 10)
-	// userAddress := common.HexToAddress("0x328809Bc894f92807417D2dAD6b7C998c1aFdac6")
 
-	userAddress, alicePrivKey := utils.MakeAddrAndKey("alice")
-	fmt.Printf("Alice's address: %s\n", userAddress.Hex())
-	fmt.Printf("Alice's private key: 0x%x\n", crypto.FromECDSA(alicePrivKey))
-
-	log.Println("alice userAddress", userAddress, alicePrivKey)
+	fmt.Printf("Users's address: %s\n", userAddress.Hex())
+	fmt.Printf("Users's private key: 0x%x\n", crypto.FromECDSA(alicePrivKey))
 
 	// Create the pool key
 	poolKey := createPoolKey(currency0, currency1, ethereum.HookAddress)

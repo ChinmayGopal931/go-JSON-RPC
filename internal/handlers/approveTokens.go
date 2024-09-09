@@ -10,11 +10,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ApproveTokens handles the approval of both hardcoded tokens for the SwapRouter and LPRouter
+// ApproveTokens handles the approval of both tokens for the SwapRouter and LPRouter
 func ApproveTokens(c *gin.Context) {
+	var req struct {
+		Currency0 string `json:"currency0" binding:"required"`
+		Currency1 string `json:"currency1" binding:"required"`
+	}
 
-	currency0 := common.HexToAddress("0xAA292E8611aDF267e563f334Ee42320aC96D0463")
-	currency1 := common.HexToAddress("0xf953b3A269d80e3eB0F2947630Da976B896A8C5b")
+	log.Println("eeeeee", req.Currency0, req.Currency1)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	currency0 := common.HexToAddress(req.Currency0)
+	currency1 := common.HexToAddress(req.Currency1)
+	log.Println(currency0, currency1)
 
 	// Create transactor
 	auth, err := createTransactor()

@@ -3,12 +3,12 @@ ethereum_node_url: "http://localhost:8545"
 chain_id: 31337  # Local development chain ID
 
 # Contract Addresses
-swap_router_address: "0x86A2EE8FAf9A840F7a2c64CA3d51209F9A02081D"
-lp_router_address: "0x4631BCAbD6dF18D94796344963cB60d44a4136b6"
-manager_address: "0x7A9Ec1d04904907De0ED7b6839CcdD59c3716AC9"
-hook_address: "0x98ECD70c8D9D6363be452f5c1113D574b78eCAc0"
+swap_router_address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+lp_router_address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+manager_address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+hook_address: "0xA4B10483554041f45fe0E481B6Adc26b17eA0aC0"
 
-# Account Configuration
+# Account Configuration (dont update this)
 private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
 # API Server Configuration
@@ -20,8 +20,8 @@ gas_limit: 500000
 gas_price: 20  # 20 Gwei
 
 # Token Addresses
-token0_address: "0x0355B7B8cb128fA5692729Ab3AAa199C1753f726"
-token1_address: "0x202CCe504e04bEd6fC0521238dDf04Bc9E8E15aB"
+token0_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
+token1_address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
 
 # Pool Configuration
 default_fee: 3000

@@ -13,6 +13,8 @@ var (
 	LPRouterAddress   common.Address
 	ManagerAddress    common.Address
 	HookAddress       common.Address
+	Token0_address    common.Address
+	Token1_address    common.Address
 	SwapRouterABI     abi.ABI
 	LPRouterABI       abi.ABI
 	ManagerABI        abi.ABI
@@ -40,6 +42,10 @@ func InitContracts(cfg *config.Config) error {
 	LPRouterAddress = common.HexToAddress(cfg.LPRouterAddress)
 	ManagerAddress = common.HexToAddress(cfg.ManagerAddress)
 	HookAddress = common.HexToAddress(cfg.HookAddress)
+
+	//For testing
+	Token0_address = common.HexToAddress(cfg.Token0_address)
+	Token1_address = common.HexToAddress(cfg.Token1_address)
 
 	return nil
 }

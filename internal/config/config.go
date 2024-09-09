@@ -19,6 +19,8 @@ type Config struct {
 	LPRouterAddress   string `mapstructure:"lp_router_address"`
 	ManagerAddress    string `mapstructure:"manager_address"`
 	HookAddress       string `mapstructure:"hook_address"`
+	Token0_address    string `mapstructure:"token0_address"`
+	Token1_address    string `mapstructure:"token1_address"`
 }
 
 func Load() (*Config, error) {

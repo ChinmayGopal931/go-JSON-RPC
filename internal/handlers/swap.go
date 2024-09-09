@@ -15,12 +15,27 @@ import (
 )
 
 func Swap(c *gin.Context) {
-	// Hardcoded values (consider making these configurable or part of the request)
-	currency0 := common.HexToAddress("0xAA292E8611aDF267e563f334Ee42320aC96D0463")
-	currency1 := common.HexToAddress("0xf953b3A269d80e3eB0F2947630Da976B896A8C5b")
+	var req struct {
+		Currency0  string `json:"currency0" binding:"required"`
+		Currency1  string `json:"currency1" binding:"required"`
+		Amount     string `json:"amount" binding:"required"`
+		ZeroForOne bool   `json:"zeroForOne"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	currency0 := common.HexToAddress(req.Currency0)
+	currency1 := common.HexToAddress(req.Currency1)
+	amountSpecified, ok := new(big.Int).SetString(req.Amount, 10)
+	if !ok {
+		c.JSON(400, gin.H{"error": "Invalid amount"})
+		return
+	}
 
 	zeroForOne := true
-	amountSpecified, _ := new(big.Int).SetString("10000000", 10) // 1 ether
 	sqrtPriceLimitX96, _ := new(big.Int).SetString("4295128740", 10)
 
 	auth, err := createTransactor()

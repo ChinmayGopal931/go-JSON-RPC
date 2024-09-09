@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"log"
 	"math/big"
 
 	"uniswap-v4-rpc/internal/ethereum"
@@ -15,10 +16,8 @@ import (
 
 func Initialize(c *gin.Context) {
 	var req struct {
-		Token0      common.Address `json:"token0"`
-		Token1      common.Address `json:"token1"`
-		TickSpacing int64          `json:"tickSpacing"`
-		Hook        common.Address `json:"hook"`
+		Currency0 common.Address `json:"currency0" binding:"required"`
+		Currency1 common.Address `json:"currency1" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -34,12 +33,14 @@ func Initialize(c *gin.Context) {
 
 	// Constants
 	sqrtPrice1To1, _ := new(big.Int).SetString("79228162514264337593543950336", 10)
+	currency0 := req.Currency0
+	currency1 := req.Currency1
+	poolKey := createPoolKey(req.Currency0, req.Currency1, ethereum.HookAddress)
 
-	// Create PoolKey
-	currency0 := common.HexToAddress("0xAA292E8611aDF267e563f334Ee42320aC96D0463")
-	currency1 := common.HexToAddress("0xf953b3A269d80e3eB0F2947630Da976B896A8C5b")
-
-	poolKey := createPoolKey(currency0, currency1, ethereum.HookAddress)
+	log.Printf("Adding liquidity with the following parameters:")
+	log.Printf("Currency0: %s", currency0.Hex())
+	log.Printf("Currency1: %s", currency1.Hex())
+	log.Printf("poolKey: %s", poolKey)
 
 	initData, err := ethereum.ManagerABI.Pack("initialize", poolKey, sqrtPrice1To1, []byte{})
 	if err != nil {

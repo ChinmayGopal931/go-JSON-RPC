@@ -15,16 +15,25 @@ import (
 )
 
 func AddLiquidity(c *gin.Context) {
-	// Hardcoded values (replace with actual values from your environment)
-	currency0 := common.HexToAddress("0xAA292E8611aDF267e563f334Ee42320aC96D0463")
-	currency1 := common.HexToAddress("0xf953b3A269d80e3eB0F2947630Da976B896A8C5b")
+	var req struct {
+		Currency0 common.Address `json:"currency0" binding:"required"`
+		Currency1 common.Address `json:"currency1" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	currency0 := req.Currency0
+	currency1 := req.Currency1
 
 	fee := big.NewInt(3000)
 	tickSpacing := big.NewInt(60)
 
 	minTick := big.NewInt(-887220)
 	maxTick := big.NewInt(887220)
-	liquidityAmount, _ := new(big.Int).SetString("100000000000000000000", 10) // 100 ether
+	liquidityAmount, _ := new(big.Int).SetString("-100000000000000000000", 10) // 100 ether
 
 	log.Printf("Adding liquidity with the following parameters:")
 	log.Printf("Currency0: %s", currency0.Hex())
@@ -91,12 +100,14 @@ func AddLiquidity(c *gin.Context) {
 		LiquidityDelta: liquidityAmount,
 		Salt:           [32]byte{},
 	}
+	log.Printf("data: %s", auth.Nonce.Uint64(), ethereum.LPRouterAddress, big.NewInt(0), 500000, auth.GasPrice)
 
-	data, err := ethereum.LPRouterABI.Pack("modifyLiquidity", poolKey, params, []byte{})
+	data, err := ethereum.LPRouterABI.Pack("modifyLiquidity", poolKey, params, []byte{}, false, false)
 	if err != nil {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Failed to pack data: %v", err)})
 		return
 	}
+	log.Printf("data: %s", data, auth.Nonce.Uint64(), ethereum.LPRouterAddress, big.NewInt(0), 500000, auth.GasPrice, data)
 
 	tx := types.NewTransaction(auth.Nonce.Uint64(), ethereum.LPRouterAddress, big.NewInt(0), 500000, auth.GasPrice, data)
 	signedTx, err := auth.Signer(auth.From, tx)
@@ -104,12 +115,14 @@ func AddLiquidity(c *gin.Context) {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Failed to sign transaction: %v", err)})
 		return
 	}
+	log.Printf("signedTx: %s", signedTx)
 
 	err = ethereum.Client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Failed to send transaction: %v", err)})
 		return
 	}
+	log.Printf("data: %s", data)
 
 	// Check balances after adding liquidity
 	balance0After, err := utils.GetBalance(currency0, auth.From)

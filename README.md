@@ -230,12 +230,13 @@ The project includes a CLI tool for interacting with the JSON-RPC server. To bui
 Update the cmd/main.go file with the correct addresses. 
 
 Example Usage
-`./uniswap-cli approve -currency0 0x1234... -currency1 0x5678...
 
-./uniswap-cli swap -currency0 0x1234... -currency1 0x5678... -amount 1000000000000000000 -zeroForOne=true
-`
-`./uniswap-cli addLiquidity -currency0 0x1234... -currency1 0x5678... -amount 1000000000000000000 -zeroForOne=true
-`
+```./uniswap-cli approve -currency0 0x1234... -currency1 0x5678...```
+
+```./uniswap-cli swap -currency0 0x1234... -currency1 0x5678... -amount 1000000000000000000 -zeroForOne=true```
+
+```./uniswap-cli addLiquidity -currency0 0x1234... -currency1 0x5678... -amount 1000000000000000000 -zeroForOne=true```
+
 
 ## Testing
 

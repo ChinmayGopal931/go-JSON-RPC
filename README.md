@@ -205,7 +205,7 @@ go run cmd/server/main.go
 ##API Endpoints
 
   
-
+```
 /approve: Approve tokens on the lp router and swap router address
 
 /initialize: Initialize a new Uniswap V4 pool
@@ -219,7 +219,7 @@ go run cmd/server/main.go
 /performSwapWithPermit: Execute a token swap with permit (ERC-2612)
 
 /addLiquidityPermit: Execute modify liquidity with permit (ERC-2612)
-
+```
   
 
 ## CLI Tool

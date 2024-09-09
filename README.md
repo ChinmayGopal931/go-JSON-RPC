@@ -40,7 +40,6 @@ uniswap-v4-rpc/
 
 │ ├── server/
 
-
 │ └── main.go
 
 │
@@ -103,21 +102,41 @@ uniswap-v4-rpc/
 
 ## Setup
 
-  
+```
+foundryup
+```
+
+## Set up
+
+*requires [foundry](https://book.getfoundry.sh)*
+
+```
+forge install
+forge test
+```
+
 
 1. Clone the repository:
 2. Run `Anvil` to spin up a local blockchain
 3. Compile Contracts and Navigate to the contracts directory and run (this runs the deploy script)
-`forge script script/Anvil.s.sol \
+
+```bash
+# start anvil, a local EVM chain
+anvil
+
+# in a new terminal
+forge script script/Anvil.s.sol \
     --rpc-url http://localhost:8545 \
     --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-    --broadcast --via-ir  `
+    --broadcast
+```
+
 4. Read the logs from the deploy script and copy them over to the config.yaml file
 5. Run `go run main.go` in the root Directory to start the server
 
   ![Screenshot 2024-09-08 at 7 46 44 PM](https://github.com/user-attachments/assets/1090ee01-40c8-4d1d-9b96-beee086568d6)
 
-  
+
 
 ## Configuration
 
@@ -240,20 +259,36 @@ Example Usage
 
 ## Testing
 
-The project includes integration tests that interact with a local Ethereum testnet (e.g., Ganache, Hardhat).
+The project includes integration tests that interact with a local Ethereum blockchain Anvil.
 
 To run the tests:
 
-1.  Ensure your local Ethereum testnet is running.
+1.  Ensure your local Ethereum blockkchain testnet is running (`Anvil`).
 2.  Update `config.yaml` in the test/integration folder with the contract details
-3.  Run the tests:
+3.  Run the golang tests:
     
   `go test -v ./test/integration/...`
+4. Run Foundry Tests 
+   `forge test`
     
 
 The tests cover:
 
+Server:
 -   Address check (`address_check_test.go`)
 -   Swapping tokens (`swap_test.go`)
 -   Adding liquidity (`liquidity_test.go`) // Can remove liquidity if you update the value 
 -   Initializing pools and other operations (`setup_test.go`)
+
+Contracts:
+-  (`Counter.t.sol`) Checks for correct ERC-2612 simplementation as well as simple hook functionality. 
+
+
+
+## Check Forge Installation
+*Ensure that you have correctly installed Foundry (Forge) and that it's up to date. You can update Foundry by running:*
+
+
+
+
+

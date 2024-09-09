@@ -127,7 +127,6 @@ uniswap-v4-rpc/
 The `config.yaml` file contains all necessary configuration for the server:
 
 
-```yaml
 
 `# Ethereum Network Configuration
 

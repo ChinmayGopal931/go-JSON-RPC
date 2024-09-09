@@ -285,10 +285,3 @@ Contracts:
 
 
 
-## Check Forge Installation
-*Ensure that you have correctly installed Foundry (Forge) and that it's up to date. You can update Foundry by running:*
-
-
-
-
-

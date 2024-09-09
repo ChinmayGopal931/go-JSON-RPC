@@ -31,11 +31,6 @@ func SwapPermit(c *gin.Context) {
 		return
 	}
 
-	userAddress1, alicePrivKey1 := utils.MakeAddrAndKey("alice")
-	fmt.Printf("Alice's address: %s\n", userAddress1.Hex())
-	fmt.Printf("Alice's private key: 0x%x\n", crypto.FromECDSA(alicePrivKey1))
-	fmt.Printf("Alice's private key: 0x%x\n", alicePrivKey1)
-
 	currency0 := common.HexToAddress(req.Currency0)
 	currency1 := common.HexToAddress(req.Currency1)
 	amountSpecified, ok := new(big.Int).SetString(req.Amount, 10)

@@ -45,7 +45,6 @@ contract PoolModifyLiquidityTest is PoolTestBase, EIP712 {
         IPoolManager.ModifyLiquidityParams memory params,
         bytes memory hookData
     ) external payable returns (BalanceDelta delta) {
-        console.log(" need to be here");
         delta = modifyLiquidity(key, params, hookData, false, false);
     }
 

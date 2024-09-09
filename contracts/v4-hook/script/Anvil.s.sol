@@ -16,7 +16,6 @@ import {TickMath} from "v4-core/src/libraries/TickMath.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {Counter} from "../src/Counter.sol";
 import {HookMiner} from "../test/utils/HookMiner.sol";
-// import {ERC20PermitMock} from "v4-periphery/lib/permit2/lib/openzeppelin-contracts/contracts/mocks/ERC20PermitMock.sol";
 import {MOCKERC20PERMIT} from "../test/utils/MockERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
@@ -110,16 +109,11 @@ contract CounterScript is Script {
     ) internal {
         (MOCKERC20PERMIT token0, MOCKERC20PERMIT token1) = deployTokens();
 
-        console.log("TOKEN A", address(token0));
-        console.log("TOKEN B", address(token1));
-
         // Transfer tokens to Alice
         token0.mint(msg.sender, 100_000 ether);
         token1.mint(msg.sender, 100_000 ether);
         token0.mint(alice, 100_000 ether);
         token1.mint(alice, 100_000 ether);
-        token0.mint(address(0xD89091e7F5cE9f179B62604f658a5DD0E726e600), 100_000 ether);
-        token1.mint(address(0xD89091e7F5cE9f179B62604f658a5DD0E726e600), 100_000 ether);
         token0.mint(address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266), 100_000 ether);
         token1.mint(address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266), 100_000 ether);
 

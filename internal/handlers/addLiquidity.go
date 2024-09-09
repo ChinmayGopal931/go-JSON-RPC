@@ -28,18 +28,13 @@ func AddLiquidity(c *gin.Context) {
 	currency0 := req.Currency0
 	currency1 := req.Currency1
 
-	fee := big.NewInt(3000)
-	tickSpacing := big.NewInt(60)
-
 	minTick := big.NewInt(-887220)
 	maxTick := big.NewInt(887220)
-	liquidityAmount, _ := new(big.Int).SetString("-100000000000000000000", 10) // 100 ether
+	liquidityAmount, _ := new(big.Int).SetString("100000000000000000000", 10) // 100 ether
 
 	log.Printf("Adding liquidity with the following parameters:")
 	log.Printf("Currency0: %s", currency0.Hex())
 	log.Printf("Currency1: %s", currency1.Hex())
-	log.Printf("Fee: %s", fee.String())
-	log.Printf("TickSpacing: %s", tickSpacing.String())
 	log.Printf("LiquidityAmount: %s", liquidityAmount.String())
 
 	auth, err := createTransactor()
@@ -150,8 +145,6 @@ func AddLiquidity(c *gin.Context) {
 		"params": gin.H{
 			"currency0":       currency0.Hex(),
 			"currency1":       currency1.Hex(),
-			"fee":             fee.String(),
-			"tickSpacing":     tickSpacing.String(),
 			"liquidityAmount": liquidityAmount.String(),
 		},
 	})

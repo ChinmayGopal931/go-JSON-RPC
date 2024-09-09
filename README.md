@@ -30,75 +30,64 @@ This project implements a JSON-RPC 2.0 server for interacting with Uniswap V4 po
 
 ## Project Structure
 
-`
+```
 
 uniswap-v4-rpc/
-
 │
-
 ├── cmd/
-
-│ ├── server/
-
-│ └── main.go
-
-│
-
-├── internal/
-
-│ ├── config/
-
-│ │ └── config.go
-
-│ ├── handlers/
-
-│ │ ├── swap.go
-
-│ │ ├── liquidity.go
-
-│ │ └── initialize.go
-
-│ ├── ethereum/
-
-│ │ ├── client.go
-
-│ │ └── contracts.go
-
-│ └── routes/
-
-│ └── routes.go
-
-│
-
-├── pkg/
-
-│ └── utils/
-
-│ └── ethereum_utils.go
-
-│
-
+│   └── main.go
 ├── test/
-
-│ └── integration/
-
-│ ├── setup_test.go
-
-│ ├── swap_test.go
-
-│ └── liquidity_test.go
-
-│
-
+├── uniswap-cli/
+├── contracts/v4-hook/
+│   ├── .forge-snapshots/
+│   ├── broadcast/
+│   ├── cache/
+│   ├── lib/
+│   ├── out/
+│   ├── script/
+│   ├── src/
+│   │   └── Counter.sol
+│   └── test/
+│       ├── utils/
+│       └── Counter.t.sol
+├── .env
+├── .gitignore
+├── foundry.toml
+├── README.md
+├── remappings.txt
+├── internal/
+│   ├── config/
+│   │   └── config.go
+│   ├── ethereum/
+│   │   ├── client.go
+│   │   ├── contracts.go
+│   │   └── erc20.go
+│   ├── handlers/
+│   │   ├── addLiquidity.go
+│   │   ├── addLiquidityPermit.go
+│   │   ├── approveTokens.go
+│   │   ├── initialize.go
+│   │   ├── swap.go
+│   │   └── swapPermit.go
+│   ├── routes/
+│   │   └── routes.go
+│   └── pkg/utils/
+│       └── ethereum_utils.go
+├── test/integration/
+│   ├── addresses_check_test.go
+│   ├── config.yaml
+│   ├── liquidity_test.go
+│   ├── setup_test.go
+│   └── swap_test.go
+├── .env
+├── .gitignore
 ├── config.yaml
-
 ├── go.mod
-
 ├── go.sum
-
+├── main.go
 └── README.md
 
-`
+```
 
 ## Setup
 
@@ -132,7 +121,7 @@ forge script script/Anvil.s.sol \
 ```
 
 4. Read the logs from the deploy script and copy them over to the config.yaml file
-5. Run `go run main.go` in the root Directory to start the server
+5. Run `go run main.go` in the root Directory to start the golang rpc server
 
   ![Screenshot 2024-09-08 at 7 46 44 PM](https://github.com/user-attachments/assets/1090ee01-40c8-4d1d-9b96-beee086568d6)
 
@@ -140,9 +129,7 @@ forge script script/Anvil.s.sol \
 
 ## Configuration
 
-  
-
-The `config.yaml` file contains all necessary configuration for the server:
+The `config.yaml` file contains all necessary configuration for the server(Addresses will have to be manually set using the values from the deploy script):
 
 
 ```
@@ -220,13 +207,16 @@ go run cmd/server/main.go
 
 
 
-##API Endpoints
+# API Endpoints
 
+### Note: Pool needs to be initalized, approved and seeded with liquidity before being able to swap
   
-`
-## /approve: Approve tokens on the lp router and swap router address
+For more details please check:  `internal/routes/routes.go`  
 
-Example Usage
+
+## Example Usage
+
+### /approve: Approve tokens on the lp router and swap router address
 
 ```
 curl -X POST http://localhost:8080/approve \
@@ -237,7 +227,7 @@ curl -X POST http://localhost:8080/approve \
 }'
 ```
 
-## /initialize: Initialize a new Uniswap V4 pool
+### /initialize: Initialize a new Uniswap V4 pool
 
 ```
 curl -X POST http://localhost:8080/initialize \
@@ -248,7 +238,7 @@ curl -X POST http://localhost:8080/initialize \
 }'
 ```
 
-## /addLiquidity: Add liquidity to a pool
+### /addLiquidity: Add liquidity to a pool
 
 ```
 curl -X POST http://localhost:8080/addLiquidity \
@@ -260,11 +250,11 @@ curl -X POST http://localhost:8080/addLiquidity \
 ```
 
 
-## /performSwap: Execute a token swap
+### /performSwap: Execute a token swap
 
 
 ```
-curl -X POST http://localhost:8080/perfromSwap \
+curl -X POST http://localhost:8080/performSwap \
 -H "Content-Type: application/json" \
 -d '{
   "currency0": "0xYourCurrency0Address",
@@ -274,7 +264,7 @@ curl -X POST http://localhost:8080/perfromSwap \
 }'
 ```
 
-## /performSwapWithPermit: Execute a token swap with permit (ERC-2612)
+### /performSwapWithPermit: Execute a token swap with permit (ERC-2612)
 
 ```
 curl -X POST http://localhost:8080/performSwapWithPermit \
@@ -289,7 +279,7 @@ curl -X POST http://localhost:8080/performSwapWithPermit \
 }'
 ```
 
-## /addLiquidityPermit: Execute modify liquidity with permit (ERC-2612)
+### /addLiquidityPermit: Execute modify liquidity with permit (ERC-2612)
 
 ```
 curl -X POST http://localhost:8080/addLiquidityPermit \
@@ -302,18 +292,19 @@ curl -X POST http://localhost:8080/addLiquidityPermit \
 }'
 ```
 
-`
   
 
 
 ## CLI Tool
 
 The project includes a CLI tool for interacting with the JSON-RPC server. To build the CLI tool:
+
+
 ``go build -o uniswap-cli cmd/main.go``
 
 Update the cmd/main.go file with the correct addresses. 
 
-Example Usage
+Example Usage (NB: initalize->approve->AddLiquidity->swap)
 
 ```./uniswap-cli approve -currency0 0x1234... -currency1 0x5678...```
 
@@ -331,7 +322,6 @@ To run the tests:
 1.  Ensure your local Ethereum blockkchain testnet is running (`Anvil`).
 2.  Update `config.yaml` in the test/integration folder with the contract details
 3.  Run the golang tests:
-    
   `go test -v ./test/integration/...`
 4. Run Foundry Tests 
    `forge test`
@@ -343,10 +333,19 @@ Server:
 -   Address check (`address_check_test.go`)
 -   Swapping tokens (`swap_test.go`)
 -   Adding liquidity (`liquidity_test.go`) // Can remove liquidity if you update the value 
--   Initializing pools and other operations (`setup_test.go`)
+-   Setup operations (`setup_test.go`)
 
 Contracts:
 -  (`Counter.t.sol`) Checks for correct ERC-2612 simplementation as well as simple hook functionality. 
 
 
 
+## Additional Notes
+- withPermit functions ustlize ERC-2612 to have their approvals set on chain. The user technically does not need to have any eth to pay for gas as the server submits the tx on chain. Permit routes could easily be modified to just accept signatures instead of the private key but for the sake of testing I have used pk as an argument. 
+
+
+I reccomend trying out the initalize -> approve -> Addliquidity -> Swap routes before trying to run the tests. They Are not configured to run in a particular order so they sometimes try to swap before initalizing. 
+
+Example PrivateKey and address for permit Routes:
+  address - `0x328809Bc894f92807417D2dAD6b7C998c1aFdac6`
+  private key (0x removed) - `9c0257114eb9399a2985f8e75dad7600c5d89fe3824ffa99ec1c3eb8bf3b0501`

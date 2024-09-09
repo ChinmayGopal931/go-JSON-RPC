@@ -218,53 +218,52 @@ environment: "development"`
 
 go run cmd/server/main.go
 
-  
-  
+
 
 ##API Endpoints
 
   
-```
-/approve: Approve tokens on the lp router and swap router address
+`
+## /approve: Approve tokens on the lp router and swap router address
 
 Example Usage
 
-`
+```
 curl -X POST http://localhost:8080/approve \
 -H "Content-Type: application/json" \
 -d '{
   "currency0": "0xYourCurrency0Address",
   "currency1": "0xYourCurrency1Address"
 }'
-`
+```
 
-/initialize: Initialize a new Uniswap V4 pool
+## /initialize: Initialize a new Uniswap V4 pool
 
-`
+```
 curl -X POST http://localhost:8080/initialize \
 -H "Content-Type: application/json" \
 -d '{
   "currency0": "0xYourCurrency0Address",
   "currency1": "0xYourCurrency1Address"
 }'
-`
+```
 
-/addLiquidity: Add liquidity to a pool
+## /addLiquidity: Add liquidity to a pool
 
-`
+```
 curl -X POST http://localhost:8080/addLiquidity \
 -H "Content-Type: application/json" \
 -d '{
   "currency0": "0xYourCurrency0Address",
   "currency1": "0xYourCurrency1Address"
 }'
-`
+```
 
 
-/performSwap: Execute a token swap
+## /performSwap: Execute a token swap
 
 
-`
+```
 curl -X POST http://localhost:8080/perfromSwap \
 -H "Content-Type: application/json" \
 -d '{
@@ -273,11 +272,11 @@ curl -X POST http://localhost:8080/perfromSwap \
   "amount": "1000000000000000000",  
   "zeroForOne": true
 }'
-`
+```
 
-/performSwapWithPermit: Execute a token swap with permit (ERC-2612)
+## /performSwapWithPermit: Execute a token swap with permit (ERC-2612)
 
-`
+```
 curl -X POST http://localhost:8080/performSwapWithPermit \
 -H "Content-Type: application/json" \
 -d '{
@@ -288,12 +287,11 @@ curl -X POST http://localhost:8080/performSwapWithPermit \
   "userAddress": "0xYourEthereumAddress",
   "privateKey": "0xYourPrivateKey"
 }'
+```
 
-`
+## /addLiquidityPermit: Execute modify liquidity with permit (ERC-2612)
 
-/addLiquidityPermit: Execute modify liquidity with permit (ERC-2612)
-
-`
+```
 curl -X POST http://localhost:8080/addLiquidityPermit \
 -H "Content-Type: application/json" \
 -d '{
@@ -302,9 +300,9 @@ curl -X POST http://localhost:8080/addLiquidityPermit \
   "amount": "1000000000000000000",  
   "zeroForOne": true
 }'
-`
-
 ```
+
+`
   
 
 

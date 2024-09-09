@@ -182,7 +182,8 @@ default_fee: 3000
 
 default_tick_spacing: 60
 
-  
+  ![Screenshot 2024-09-08 at 7 46 44 PM](https://github.com/user-attachments/assets/1090ee01-40c8-4d1d-9b96-beee086568d6)
+
 
 ###### Logging
 

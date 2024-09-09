@@ -115,6 +115,7 @@ uniswap-v4-rpc/
 4. Read the logs from the deploy script and copy them over to the config.yaml file
 5. Run `go run main.go` in the root Directory to start the server
 
+  ![Screenshot 2024-09-08 at 7 46 44 PM](https://github.com/user-attachments/assets/1090ee01-40c8-4d1d-9b96-beee086568d6)
 
   
 
@@ -181,8 +182,6 @@ token1_address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
 default_fee: 3000
 
 default_tick_spacing: 60
-
-  ![Screenshot 2024-09-08 at 7 46 44 PM](https://github.com/user-attachments/assets/1090ee01-40c8-4d1d-9b96-beee086568d6)
 
 
 ###### Logging

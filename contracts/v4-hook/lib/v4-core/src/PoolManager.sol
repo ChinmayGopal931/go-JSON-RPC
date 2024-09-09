@@ -156,31 +156,9 @@ contract PoolManager is IPoolManager, ProtocolFees, NoDelegateCall, ERC6909Claim
     ) external onlyWhenUnlocked noDelegateCall returns (BalanceDelta callerDelta, BalanceDelta feesAccrued) {
         PoolId id = key.toId();
         Pool.State storage pool = _getPool(id);
-
-        console.log("before check");
         pool.checkPoolInitialized();
-        console.log("after check");
 
         key.hooks.beforeModifyLiquidity(key, params, hookData);
-
-        console.log("after beforeModifyLiquidity");
-
-        console.log("msg.sender", msg.sender);
-        console.log("lower tick");
-        console.logInt(params.tickLower);
-
-        console.log("upper tick");
-        console.logInt(params.tickUpper);
-
-        console.log("key.tickSpacing");
-        console.logInt(key.tickSpacing);
-
-        console.log("params.liquidityDelta.toInt128()");
-        console.logInt(params.liquidityDelta.toInt128());
-
-        console.log(" params.salt");
-        console.logBytes32(params.salt);
-
         BalanceDelta principalDelta;
         (principalDelta, feesAccrued) = pool.modifyLiquidity(
             Pool.ModifyLiquidityParams({
@@ -192,24 +170,16 @@ contract PoolManager is IPoolManager, ProtocolFees, NoDelegateCall, ERC6909Claim
                 salt: params.salt
             })
         );
-
-        console.log("after");
-
         // fee delta and principal delta are both accrued to the caller
         callerDelta = principalDelta + feesAccrued;
-        console.log("after");
 
         // event is emitted before the afterModifyLiquidity call to ensure events are always emitted in order
         emit ModifyLiquidity(id, msg.sender, params.tickLower, params.tickUpper, params.liquidityDelta, params.salt);
-        console.log("after");
 
         BalanceDelta hookDelta;
         (callerDelta, hookDelta) = key.hooks.afterModifyLiquidity(key, params, callerDelta, hookData);
-        console.log("after");
-
         // if the hook doesnt have the flag to be able to return deltas, hookDelta will always be 0
         if (hookDelta != BalanceDeltaLibrary.ZERO_DELTA) _accountPoolBalanceDelta(key, hookDelta, address(key.hooks));
-        console.log("after");
 
         _accountPoolBalanceDelta(key, callerDelta, msg.sender);
     }
@@ -224,13 +194,9 @@ contract PoolManager is IPoolManager, ProtocolFees, NoDelegateCall, ERC6909Claim
         if (params.amountSpecified == 0) SwapAmountCannotBeZero.selector.revertWith();
         PoolId id = key.toId();
 
-        console.log("in manager");
-
         Pool.State storage pool = _getPool(id);
-        console.log("in manager");
 
         pool.checkPoolInitialized();
-        console.log("in manager");
 
         BeforeSwapDelta beforeSwapDelta;
         {

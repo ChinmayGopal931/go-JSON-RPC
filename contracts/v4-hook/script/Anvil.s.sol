@@ -65,6 +65,10 @@ contract CounterScript is Script {
         vm.startBroadcast();
         testLifecycleWithPermit(manager, address(counter), lpRouter, swapRouter);
         vm.stopBroadcast();
+
+        vm.startBroadcast();
+        deployAndSeedTestContracts(manager, address(counter), lpRouter, swapRouter);
+        vm.stopBroadcast();
     }
 
     // -----------------------------------------------------------
@@ -187,6 +191,70 @@ contract CounterScript is Script {
         // console.log("Swap completed successfully");
         // console.log("Token0 balance of Alice:", token0.balanceOf(alice));
         // console.log("Token1 balance of Alice:", token1.balanceOf(alice));
+    }
+
+    function deployAndSeedTestContracts(
+        IPoolManager manager,
+        address hook,
+        PoolModifyLiquidityTest lpRouter,
+        PoolSwapTest swapRouter
+    ) internal {
+        MOCKERC20PERMIT tokenC = new MOCKERC20PERMIT("MockC", "C", 18);
+        MOCKERC20PERMIT tokenD = new MOCKERC20PERMIT("MockD", "D", 18);
+
+        if (uint160(address(tokenC)) > uint160(address(tokenD))) {
+            MOCKERC20PERMIT temp = tokenD;
+            tokenD = tokenC;
+            tokenC = temp;
+        }
+
+        console.log("TOKEN C", address(tokenC));
+        console.log("TOKEN D", address(tokenD));
+
+        // Transfer tokens to Alice
+        tokenC.mint(msg.sender, 100_000 ether);
+        tokenD.mint(msg.sender, 100_000 ether);
+        tokenC.mint(alice, 100_000 ether);
+        tokenD.mint(alice, 100_000 ether);
+        tokenC.mint(address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266), 100_000 ether);
+        tokenD.mint(address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266), 100_000 ether);
+
+        tokenC.approve(address(lpRouter), type(uint256).max);
+        tokenD.approve(address(lpRouter), type(uint256).max);
+
+        tokenC.approve(address(swapRouter), type(uint256).max);
+        tokenD.approve(address(swapRouter), type(uint256).max);
+
+        bytes memory ZERO_BYTES = new bytes(0);
+
+        // Initialize the pool
+        int24 tickSpacing = 60;
+        PoolKey memory poolKey =
+            PoolKey(Currency.wrap(address(tokenC)), Currency.wrap(address(tokenD)), 3000, tickSpacing, IHooks(hook));
+
+        manager.initialize(poolKey, Constants.SQRT_PRICE_1_1, ZERO_BYTES);
+
+        lpRouter.modifyLiquidity(
+            poolKey,
+            IPoolManager.ModifyLiquidityParams(
+                TickMath.minUsableTick(tickSpacing), TickMath.maxUsableTick(tickSpacing), 100 ether, 0
+            ),
+            ZERO_BYTES
+        );
+
+        // Prepare swap parameters
+        bool zeroForOne = true;
+        int256 amountSpecified = 1 ether;
+        IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
+            zeroForOne: zeroForOne,
+            amountSpecified: amountSpecified,
+            sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
+        });
+
+        PoolSwapTest.TestSettings memory testSettings =
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false});
+
+        swapRouter.swap(poolKey, params, testSettings, ZERO_BYTES);
     }
 
     function generatePermitSignature(

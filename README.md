@@ -101,7 +101,7 @@ foundryup
 
 ```
 forge install
-forge test
+forge test --via-ir
 ```
 
 
@@ -341,10 +341,10 @@ Contracts:
 
 
 ## Additional Notes
-- withPermit functions ustlize ERC-2612 to have their approvals set on chain. The user technically does not need to have any eth to pay for gas as the server submits the tx on chain. Permit routes could easily be modified to just accept signatures instead of the private key but for the sake of testing I have used pk as an argument. 
+- withPermit functions utilize ERC-2612 to have their approvals set on chain. The user technically does not need to have any eth to pay for gas as the server submits the tx on chain. Permit routes could easily be modified to just accept signatures instead of the private key but for the sake of testing I have used pk as an argument. 
 
 
-I reccomend trying out the initalize -> approve -> Addliquidity -> Swap routes before trying to run the tests. They Are not configured to run in a particular order so they sometimes try to swap before initalizing. 
+I reccomend using `tokenC` `tokenD` from the deploy script in the `test/integration/config.yaml` file as this contract will be seeded. 
 
 Example PrivateKey and address for permit Routes:
   address - `0x328809Bc894f92807417D2dAD6b7C998c1aFdac6`

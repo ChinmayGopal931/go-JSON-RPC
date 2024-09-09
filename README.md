@@ -101,8 +101,6 @@ uniswap-v4-rpc/
 
 `
 
-  
-
 ## Setup
 
   
@@ -127,8 +125,8 @@ uniswap-v4-rpc/
 The `config.yaml` file contains all necessary configuration for the server:
 
 
-
-`# Ethereum Network Configuration
+`
+# Ethereum Network Configuration
 
 ethereum_node_url: "http://localhost:8545"
 
@@ -196,7 +194,7 @@ log_level: "debug"
 
 environment: "development"`
 
-  
+  `
   
 
 go run cmd/server/main.go

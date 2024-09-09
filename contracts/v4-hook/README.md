@@ -1,27 +1,106 @@
-# v4-template
-### **A template for writing Uniswap v4 Hooks 🦄**
+# Uniswap V4 JSON-RPC Server
 
-[`Use this Template`](https://github.com/uniswapfoundation/v4-template/generate)
+  
 
-1. The example hook [Counter.sol](src/Counter.sol) demonstrates the `beforeSwap()` and `afterSwap()` hooks
-2. The test template [Counter.t.sol](test/Counter.t.sol) preconfigures the v4 pool manager, test tokens, and test liquidity.
+This project implements a JSON-RPC 2.0 server for interacting with Uniswap V4 pools. It provides endpoints for swapping tokens, adding and removing liquidity, and other pool-related operations.
 
-<details>
-<summary>Updating to v4-template:latest</summary>
+  
 
-This template is actively maintained -- you can update the v4 dependencies, scripts, and helpers: 
-```bash
-git remote add template https://github.com/uniswapfoundation/v4-template
-git fetch template
-git merge template/main <BRANCH> --allow-unrelated-histories
-```
+## Table of Contents
 
-</details>
+  
 
----
+1. [Project Structure](#project-structure)
 
-## Check Forge Installation
-*Ensure that you have correctly installed Foundry (Forge) and that it's up to date. You can update Foundry by running:*
+2. [Setup](#setup)
+
+3. [Configuration](#configuration)
+
+4. [Running the Server](#running-the-server)
+
+5. [API Endpoints](#api-endpoints)
+
+6. [CLI Tool](#cli-tool)
+
+7. [Testing](#testing)
+
+8. [Examples](#examples)
+
+  
+
+## Project Structure
+
+`
+
+uniswap-v4-rpc/
+
+│
+
+├── cmd/
+
+│ ├── server/
+
+│ └── main.go
+
+│
+
+├── internal/
+
+│ ├── config/
+
+│ │ └── config.go
+
+│ ├── handlers/
+
+│ │ ├── swap.go
+
+│ │ ├── liquidity.go
+
+│ │ └── initialize.go
+
+│ ├── ethereum/
+
+│ │ ├── client.go
+
+│ │ └── contracts.go
+
+│ └── routes/
+
+│ └── routes.go
+
+│
+
+├── pkg/
+
+│ └── utils/
+
+│ └── ethereum_utils.go
+
+│
+
+├── test/
+
+│ └── integration/
+
+│ ├── setup_test.go
+
+│ ├── swap_test.go
+
+│ └── liquidity_test.go
+
+│
+
+├── config.yaml
+
+├── go.mod
+
+├── go.sum
+
+└── README.md
+
+`
+
+## Setup
 
 ```
 foundryup
@@ -36,9 +115,10 @@ forge install
 forge test
 ```
 
-### Local Development (Anvil)
 
-Other than writing unit tests (recommended!), you can only deploy & test hooks on [anvil](https://book.getfoundry.sh/anvil/)
+1. Clone the repository:
+2. Run `Anvil` to spin up a local blockchain
+3. Compile Contracts and Navigate to the contracts directory and run (this runs the deploy script)
 
 ```bash
 # start anvil, a local EVM chain
@@ -51,86 +131,163 @@ forge script script/Anvil.s.sol \
     --broadcast
 ```
 
-<details>
-<summary><h3>Testnets</h3></summary>
+4. Read the logs from the deploy script and copy them over to the config.yaml file
+5. Run `go run main.go` in the root Directory to start the server
 
-NOTE: 11/21/2023, the Goerli deployment is out of sync with the latest v4. **It is recommend to use local testing instead**
+  ![Screenshot 2024-09-08 at 7 46 44 PM](https://github.com/user-attachments/assets/1090ee01-40c8-4d1d-9b96-beee086568d6)
 
-~~For testing on Goerli Testnet the Uniswap Foundation team has deployed a slimmed down version of the V4 contract (due to current contract size limits) on the network.~~
 
-~~The relevant addresses for testing on Goerli are the ones below~~
 
-```bash
-POOL_MANAGER = 0x0
-POOL_MODIFY_POSITION_TEST = 0x0
-SWAP_ROUTER = 0x0
-```
+## Configuration
 
-Update the following command with your own private key:
+  
+
+The `config.yaml` file contains all necessary configuration for the server:
+
 
 ```
-forge script script/00_Counter.s.sol \
---rpc-url https://rpc.ankr.com/eth_goerli \
---private-key [your_private_key_on_goerli_here] \
---broadcast
+# Ethereum Network Configuration
+
+ethereum_node_url: "http://localhost:8545"
+
+chain_id: 31337  # Local development chain ID
+
+  
+
+##### Contract Addresses
+
+swap_router_address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"
+
+lp_router_address: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
+
+manager_address: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+
+hook_address: "0xA4B10483554041f45fe0E481B6Adc26b17eA0aC0"
+
+  
+
+###### Account Configuration
+
+private_key: "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+  
+
+###### API Server Configuration
+
+server_host: "localhost"
+
+server_port: 8080
+
+  
+
+###### Gas Configuration
+
+gas_limit: 500000
+
+gas_price: 20  # 20 Gwei
+
+  
+
+###### Token Addresses
+
+token0_address: "0x0165878A594ca255338adfa4d48449f69242Eb8F"
+
+token1_address: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+
+  
+
+###### Pool Configuration
+
+default_fee: 3000
+
+default_tick_spacing: 60
+
+
+###### Logging
+
+log_level: "debug"
+
+  
+
+###### Environment
+
+environment: "development"`
+
+  ```
+  
+
+go run cmd/server/main.go
+
+  
+  
+
+##API Endpoints
+
+  
 ```
+/approve: Approve tokens on the lp router and swap router address
 
-### *Deploying your own Tokens For Testing*
+/initialize: Initialize a new Uniswap V4 pool
 
-Because V4 is still in testing mode, most networks don't have liquidity pools live on V4 testnets. We recommend launching your own test tokens and expirementing with them that. We've included in the templace a Mock UNI and Mock USDC contract for easier testing. You can deploy the contracts and when you do you'll have 1 million mock tokens to test with for each contract. See deployment commands below
+/addLiquidity: Add liquidity to a pool
 
+/removeLiquidity: Remove liquidity from a pool
+
+/performSwap: Execute a token swap
+
+/performSwapWithPermit: Execute a token swap with permit (ERC-2612)
+
+/addLiquidityPermit: Execute modify liquidity with permit (ERC-2612)
 ```
-forge create script/mocks/mUNI.sol:MockUNI \
---rpc-url [your_rpc_url_here] \
---private-key [your_private_key_on_goerli_here]
-```
+  
 
-```
-forge create script/mocks/mUSDC.sol:MockUSDC \
---rpc-url [your_rpc_url_here] \
---private-key [your_private_key_on_goerli_here]
-```
+## CLI Tool
 
-</details>
+The project includes a CLI tool for interacting with the JSON-RPC server. To build the CLI tool:
+``go build -o uniswap-cli cmd/main.go``
 
----
+Update the cmd/main.go file with the correct addresses. 
 
-<details>
-<summary><h2>Troubleshooting</h2></summary>
+Example Usage
 
+```./uniswap-cli approve -currency0 0x1234... -currency1 0x5678...```
+
+```./uniswap-cli swap -currency0 0x1234... -currency1 0x5678... -amount 1000000000000000000 -zeroForOne=true```
+
+```./uniswap-cli addLiquidity -currency0 0x1234... -currency1 0x5678... -amount 1000000000000000000 -zeroForOne=true```
 
 
-### *Permission Denied*
+## Testing
 
-When installing dependencies with `forge install`, Github may throw a `Permission Denied` error
+The project includes integration tests that interact with a local Ethereum blockchain Anvil.
 
-Typically caused by missing Github SSH keys, and can be resolved by following the steps [here](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh) 
+To run the tests:
 
-Or [adding the keys to your ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#adding-your-ssh-key-to-the-ssh-agent), if you have already uploaded SSH keys
+1.  Ensure your local Ethereum blockkchain testnet is running (`Anvil`).
+2.  Update `config.yaml` in the test/integration folder with the contract details
+3.  Run the golang tests:
+    
+  `go test -v ./test/integration/...`
+4. Run Foundry Tests 
+   `forge test`
+    
 
-### Hook deployment failures
+The tests cover:
 
-Hook deployment failures are caused by incorrect flags or incorrect salt mining
+Server:
+-   Address check (`address_check_test.go`)
+-   Swapping tokens (`swap_test.go`)
+-   Adding liquidity (`liquidity_test.go`) // Can remove liquidity if you update the value 
+-   Initializing pools and other operations (`setup_test.go`)
 
-1. Verify the flags are in agreement:
-    * `getHookCalls()` returns the correct flags
-    * `flags` provided to `HookMiner.find(...)`
-2. Verify salt mining is correct:
-    * In **forge test**: the *deploye*r for: `new Hook{salt: salt}(...)` and `HookMiner.find(deployer, ...)` are the same. This will be `address(this)`. If using `vm.prank`, the deployer will be the pranking address
-    * In **forge script**: the deployer must be the CREATE2 Proxy: `0x4e59b44847b379578588920cA78FbF26c0B4956C`
-        * If anvil does not have the CREATE2 deployer, your foundry may be out of date. You can update it with `foundryup`
+Contracts:
+-  (`Counter.t.sol`) Checks for correct ERC-2612 simplementation as well as simple hook functionality. 
 
-</details>
 
----
 
-Additional resources:
 
-[v4-periphery](https://github.com/uniswap/v4-periphery) contains advanced hook implementations that serve as a great reference
 
-[v4-core](https://github.com/uniswap/v4-core)
 
-[v4-by-example](https://v4-by-example.org)
 
-# v4-template
-# v4-template
+
+

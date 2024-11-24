@@ -105,7 +105,7 @@ contract CounterScript is Script {
         console.log("TOKEN B", address(token1));
     }
 
-    function testLifecycleWithPermit(
+ function testLifecycleWithPermit(
         IPoolManager manager,
         address hook,
         PoolModifyLiquidityTest lpRouter,
@@ -113,17 +113,148 @@ contract CounterScript is Script {
     ) internal {
         (MOCKERC20PERMIT token0, MOCKERC20PERMIT token1) = deployTokens();
 
-        // Transfer tokens to Alice
+        // Mint tokens as before
         token0.mint(msg.sender, 100_000 ether);
         token1.mint(msg.sender, 100_000 ether);
         token0.mint(alice, 100_000 ether);
         token1.mint(alice, 100_000 ether);
-        token0.mint(address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266), 100_000 ether);
-        token1.mint(address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266), 100_000 ether);
 
-        token0.approve(address(lpRouter), type(uint256).max);
-        token1.approve(address(lpRouter), type(uint256).max);
+        bytes memory ZERO_BYTES = new bytes(0);
+        int24 tickSpacing = 60;
+        PoolKey memory poolKey = PoolKey(
+            Currency.wrap(address(token0)),
+            Currency.wrap(address(token1)),
+            3000,
+            tickSpacing,
+            IHooks(hook)
+        );
+        
+        manager.initialize(poolKey, Constants.SQRT_PRICE_1_1, ZERO_BYTES);
+
+        // Generate signatures for adding liquidity
+        console.log("\n=== ADD LIQUIDITY PERMIT PARAMETERS ===");
+        console.log("User Address:", alice);
+        console.log("Token0:", address(token0));
+        console.log("Token1:", address(token1));
+        console.log("LP Router:", address(lpRouter));
+        
+        uint256 lpAmount = 100 ether;
+        uint256 lpDeadline = block.timestamp + 3600;
+        console.log("Amount:", lpAmount);
+        console.log("Deadline:", lpDeadline);
+
+        // Get permit signatures for both tokens for LP
+        (uint8 v0, bytes32 r0, bytes32 s0) = generatePermitSignature(
+            IERC20Permit(address(token0)),
+            alice,
+            address(lpRouter),
+            lpAmount,
+            lpDeadline,
+            alicePrivateKey
+        );
+
+        (uint8 v1, bytes32 r1, bytes32 s1) = generatePermitSignature(
+            IERC20Permit(address(token1)),
+            alice,
+            address(lpRouter),
+            lpAmount,
+            lpDeadline,
+            alicePrivateKey
+        );
+
+        console.log("\nToken0 Signature:");
+        console.log("v:", uint256(v0));
+        console.log("r: 0x%s", vm.toString(r0));
+        console.log("s: 0x%s", vm.toString(s0));
+
+        console.log("\nToken1 Signature:");
+        console.log("v:", uint256(v1));
+        console.log("r: 0x%s", vm.toString(r1));
+        console.log("s: 0x%s", vm.toString(s1));
+
+        console.log("\nJSON Format for Add Liquidity:");
+        console.log("{");
+        console.log('    "currency0": "%s",', address(token0));
+        console.log('    "currency1": "%s",', address(token1));
+        console.log('    "amount": "%d",', lpAmount);
+        console.log('    "userAddress": "%s",', alice);
+        console.log('    "deadline": "%d",', lpDeadline);
+        console.log('    "v0": %d,', uint256(v0));
+        console.log('    "r0": "0x%s",', vm.toString(r0));
+        console.log('    "s0": "0x%s",', vm.toString(s0));
+        console.log('    "v1": %d,', uint256(v1));
+        console.log('    "r1": "0x%s",', vm.toString(r1));
+        console.log('    "s1": "0x%s"', vm.toString(s1));
+        console.log("}");
+
+        // Generate swap permit signature
+        console.log("\n=== SWAP PERMIT PARAMETERS ===");
+        int256 swapAmount = 1 ether;
+        uint256 swapDeadline = block.timestamp + 3600;
+        bool zeroForOne = true;
+        uint256 swapNonce = token0.nonces(alice);
+        
+        bytes32 SWAP_TYPEHASH = keccak256(
+            "SwapWithPermit(address owner,address currency0,address currency1,int256 amountSpecified,bool zeroForOne,uint256 sqrtPriceLimitX96,uint256 nonce,uint256 deadline)"
+        );
+
+        bytes32 domainSeparator = token0.DOMAIN_SEPARATOR();
+        uint256 sqrtPriceLimitX96 = zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1;
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                SWAP_TYPEHASH,
+                alice,
+                address(token0),
+                address(token1),
+                swapAmount,
+                zeroForOne,
+                sqrtPriceLimitX96,
+                swapNonce,
+                swapDeadline
+            )
+        );
+
+        bytes32 digest = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator, structHash)
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
+
+        console.log("User Address:", alice);
+        console.log("Token0:", address(token0));
+        console.log("Token1:", address(token1));
+        console.log("Swap Router:", address(swapRouter));
+        console.log("Amount:", swapAmount);
+        console.log("ZeroForOne:", zeroForOne);
+        console.log("Deadline:", swapDeadline);
+        console.log("\nSwap Signature:");
+        console.log("v:", uint256(v));
+        console.log("r: 0x%s", vm.toString(r));
+        console.log("s: 0x%s", vm.toString(s));
+
+        console.log("\nJSON Format for Swap:");
+        console.log("{");
+        console.log('    "currency0": "%s",', address(token0));
+        console.log('    "currency1": "%s",', address(token1));
+        console.log('    "amount": "%d",', swapAmount);
+        console.log('    "zeroForOne": %s,', zeroForOne ? "true" : "false");
+        console.log('    "userAddress": "%s",', alice);
+        console.log('    "deadline": "%d",', swapDeadline);
+        console.log('    "v": %d,', uint256(v));
+        console.log('    "r": "0x%s",', vm.toString(r));
+        console.log('    "s": "0x%s"', vm.toString(s));
+        console.log("}");
+
+        // Additional debug information
+        console.log("\n=== DEBUG INFORMATION ===");
+        console.log("Domain Separator:", uint256(domainSeparator));
+        console.log("Struct Hash:", uint256(structHash));
+        console.log("Final Digest:", uint256(digest));
+        console.log("Swap Nonce:", swapNonce);
+        console.log("SqrtPriceLimitX96:", sqrtPriceLimitX96);
     }
+}
 
     function deployAndSeedTestContracts(
         IPoolManager manager,

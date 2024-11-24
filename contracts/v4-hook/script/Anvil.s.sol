@@ -121,76 +121,8 @@ contract CounterScript is Script {
         token0.mint(address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266), 100_000 ether);
         token1.mint(address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266), 100_000 ether);
 
-        // bytes memory ZERO_BYTES = new bytes(0);
-
-        // // Initialize the pool
-        // int24 tickSpacing = 60;
-        // PoolKey memory poolKey =
-        //     PoolKey(Currency.wrap(address(token0)), Currency.wrap(address(token1)), 3000, tickSpacing, IHooks(hook));
-        // manager.initialize(poolKey, Constants.SQRT_PRICE_1_1, ZERO_BYTES);
-
         token0.approve(address(lpRouter), type(uint256).max);
         token1.approve(address(lpRouter), type(uint256).max);
-
-        // lpRouter.modifyLiquidity(
-        //     poolKey,
-        //     IPoolManager.ModifyLiquidityParams(
-        //         TickMath.minUsableTick(tickSpacing), TickMath.maxUsableTick(tickSpacing), 100 ether, 0
-        //     ),
-        //     ZERO_BYTES
-        // );
-
-        // // Prepare swap parameters
-        // bool zeroForOne = true;
-        // int256 amountSpecified = 1 ether;
-        // IPoolManager.SwapParams memory params = IPoolManager.SwapParams({
-        //     zeroForOne: zeroForOne,
-        //     amountSpecified: amountSpecified,
-        //     sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
-        // });
-        // PoolSwapTest.TestSettings memory testSettings =
-        //     PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false});
-
-        // // Prepare permit data
-        // uint256 deadline = block.timestamp + 3600; // 1 hour from now
-        // uint256 value = uint256(amountSpecified) * 11 / 10; // Increase by 10% to account for fees and slippage
-
-        // console.log("VALUE", value);
-        // console.log("swap router", address(swapRouter));
-        // // vm.startPrank(alice);
-
-        // (uint8 v, bytes32 r, bytes32 s) = generatePermitSignature(
-        //     IERC20Permit(address(token0)), alice, address(swapRouter), value, deadline, alicePrivateKey
-        // );
-
-        // // vm.stopPrank();
-
-        // console.log("Alice address:", alice);
-        // console.log("bob address", address(bob));
-
-        // // Perform the swap with permit (as bob, the relayer)
-        // vm.startBroadcast(bob);
-
-        // // Then, perform the swap on behalf of Alice
-        // // Call swapWithPermit
-        // swapRouter.swapWithPermit(
-        //     alice, // user
-        //     poolKey,
-        //     params,
-        //     testSettings,
-        //     ZERO_BYTES, // hookData
-        //     deadline,
-        //     v,
-        //     r,
-        //     s
-        // );
-
-        // vm.stopBroadcast();
-
-        // // Verify the swap results (you may want to add more assertions)
-        // console.log("Swap completed successfully");
-        // console.log("Token0 balance of Alice:", token0.balanceOf(alice));
-        // console.log("Token1 balance of Alice:", token1.balanceOf(alice));
     }
 
     function deployAndSeedTestContracts(

@@ -5,56 +5,70 @@ import (
 	"fmt"
 	"log"
 	"math/big"
-	"time"
 	"uniswap-v4-rpc/internal/ethereum"
 	"uniswap-v4-rpc/pkg/utils"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gin-gonic/gin"
 )
 
-func SwapPermit(c *gin.Context) {
-	var req struct {
-		Currency0   string `json:"currency0" binding:"required"`
-		Currency1   string `json:"currency1" binding:"required"`
-		Amount      string `json:"amount" binding:"required"`
-		ZeroForOne  bool   `json:"zeroForOne"`
-		UserAddress string `json:"userAddress" binding:"required"`
-		PrivateKey  string `json:"privateKey" binding:"required"`
-	}
+// SwapRequest defines the structure for a swap request with permit signature
+type SwapRequest struct {
+	Currency0   string   `json:"currency0" binding:"required"`   // Address of the input token
+	Currency1   string   `json:"currency1" binding:"required"`   // Address of the output token
+	Amount      string   `json:"amount" binding:"required"`      // Amount to swap in base units (wei)
+	ZeroForOne  bool     `json:"zeroForOne"`                     // Direction of swap (true for currency0 to currency1)
+	UserAddress string   `json:"userAddress" binding:"required"` // Address of the user initiating the swap
+	SignatureV  uint8    `json:"v" binding:"required"`           // V component of the EIP-712 signature
+	SignatureR  string   `json:"r" binding:"required"`           // R component of the EIP-712 signature
+	SignatureS  string   `json:"s" binding:"required"`           // S component of the EIP-712 signature
+	Deadline    *big.Int `json:"deadline" binding:"required"`    // Timestamp after which the permit becomes invalid
+}
 
+// SwapPermit handles token swaps using signed permits
+// This function allows users to swap tokens without pre-approving them,
+// by using EIP-712 signatures (gasless approvals)
+func SwapPermit(c *gin.Context) {
+	// Parse and validate the incoming JSON request
+	var req SwapRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
 
+	// Convert string addresses to Ethereum addresses
 	currency0 := common.HexToAddress(req.Currency0)
 	currency1 := common.HexToAddress(req.Currency1)
+	userAddress := common.HexToAddress(req.UserAddress)
+
+	// Parse the amount string to big.Int
 	amountSpecified, ok := new(big.Int).SetString(req.Amount, 10)
 	if !ok {
 		c.JSON(400, gin.H{"error": "Invalid amount"})
 		return
 	}
-	userAddress := common.HexToAddress(req.UserAddress)
-	alicePrivKey, err := crypto.HexToECDSA(req.PrivateKey)
-	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid private key"})
-		return
-	}
 
+	// Convert hex signature strings to bytes32 format
+	var r, s [32]byte
+	rBytes := common.FromHex(req.SignatureR)
+	sBytes := common.FromHex(req.SignatureS)
+	copy(r[:], rBytes)
+	copy(s[:], sBytes)
+
+	// Set swap direction and price limit
 	zeroForOne := req.ZeroForOne
+	// Default price limit for swaps
 	sqrtPriceLimitX96, _ := new(big.Int).SetString("4295128740", 10)
 
-	fmt.Printf("Users's address: %s\n", userAddress.Hex())
-	fmt.Printf("Users's private key: 0x%x\n", crypto.FromECDSA(alicePrivKey))
+	// Log user address for debugging
+	fmt.Printf("User's address: %s\n", userAddress.Hex())
 
-	// Create the pool key
+	// Create pool key for the token pair
 	poolKey := createPoolKey(currency0, currency1, ethereum.HookAddress)
 
-	// Prepare swap parameters
+	// Define swap parameters structure
 	swapParams := struct {
 		ZeroForOne        bool
 		AmountSpecified   *big.Int
@@ -65,6 +79,7 @@ func SwapPermit(c *gin.Context) {
 		SqrtPriceLimitX96: sqrtPriceLimitX96,
 	}
 
+	// Define test settings for the swap
 	testSettings := struct {
 		TakeClaims      bool
 		SettleUsingBurn bool
@@ -73,38 +88,33 @@ func SwapPermit(c *gin.Context) {
 		SettleUsingBurn: false,
 	}
 
+	// Log pool and swap details for debugging
 	log.Printf("PoolKey: currency0=%s, currency1=%s, fee=%d, tickSpacing=%d, hooks=%s",
 		poolKey.Currency0.Hex(), poolKey.Currency1.Hex(), poolKey.Fee, poolKey.TickSpacing, poolKey.Hooks.Hex())
 	log.Printf("SwapParams: zeroForOne=%v, amountSpecified=%s, sqrtPriceLimitX96=%s",
 		swapParams.ZeroForOne, swapParams.AmountSpecified.String(), swapParams.SqrtPriceLimitX96.String())
 
-	// Prepare permit data
-	deadline := big.NewInt(time.Now().Unix() + 3600) // 1 hour from now
+	// Calculate value including buffer for fees and slippage (10% buffer)
 	value := new(big.Int).Mul(amountSpecified, big.NewInt(11))
-	value = value.Div(value, big.NewInt(10)) // Increase by 10% to account for fees and slippage
+	value = value.Div(value, big.NewInt(10))
 
+	// Log transaction details
 	log.Printf("Token Address (currency0): %s", currency0.Hex())
 	log.Printf("Spender Address (SwapRouterAddress): %s", ethereum.SwapRouterAddress.Hex())
 	log.Printf("User Address: %s", userAddress.Hex())
 	log.Printf("Value: %s", value.String())
-	log.Printf("Deadline: %s", deadline.String())
+	log.Printf("Deadline: %s", req.Deadline.String())
+	log.Printf("Signature (v,r,s): %d, 0x%x, 0x%x", req.SignatureV, r, s)
 
-	// Generate permit signature
-	v, r, s, err := utils.GeneratePermitSignature(currency0, userAddress, ethereum.SwapRouterAddress, value, deadline, alicePrivKey)
-	if err != nil {
-		c.JSON(500, gin.H{"error": fmt.Sprintf("Failed to generate permit signature: %v", err)})
-		return
-	}
-
-	// Pack the data for the swapWithPermit function call
+	// Pack the transaction data for the swapWithPermit function
 	data, err := ethereum.SwapRouterABI.Pack("swapWithPermit",
 		userAddress,
 		poolKey,
 		swapParams,
 		testSettings,
-		[]byte{}, // hookData
-		deadline,
-		v,
+		[]byte{}, // hookData (empty for standard swaps)
+		req.Deadline,
+		req.SignatureV,
 		r,
 		s,
 	)
@@ -112,10 +122,12 @@ func SwapPermit(c *gin.Context) {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Error packing data: %v", err)})
 		return
 	}
-	chainID, _ := ethereum.Client.ChainID(context.Background())
 
+	// Get chain ID and create transactor
+	chainID, _ := ethereum.Client.ChainID(context.Background())
 	auth, _ := bind.NewKeyedTransactorWithChainID(ethereum.PrivateKey, chainID)
 
+	// Get initial balances for comparison
 	balance0Before, err := utils.GetBalance(currency0, userAddress)
 	if err != nil {
 		log.Printf("Error getting balance of currency0 before swap: %v", err)
@@ -129,33 +141,36 @@ func SwapPermit(c *gin.Context) {
 		return
 	}
 
-	// Create and send the transaction
+	// Get current nonce for transaction
 	nonce, err := ethereum.Client.PendingNonceAt(context.Background(), auth.From)
 	if err != nil {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Error fetching nonce: %v", err)})
 		return
 	}
 
+	// Get current gas price
 	gasPrice, err := ethereum.Client.SuggestGasPrice(context.Background())
 	if err != nil {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Error fetching gas price: %v", err)})
 		return
 	}
 
+	// Create and sign transaction
 	tx := types.NewTransaction(nonce, ethereum.SwapRouterAddress, big.NewInt(0), 1000000, gasPrice, data)
-
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), ethereum.PrivateKey)
 	if err != nil {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Error signing transaction: %v", err)})
 		return
 	}
 
+	// Send transaction to the network
 	err = ethereum.Client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
 		c.JSON(500, gin.H{"error": fmt.Sprintf("Error sending transaction: %v", err)})
 		return
 	}
 
+	// Get final balances after swap
 	balance0After, err := utils.GetBalance(currency0, userAddress)
 	if err != nil {
 		log.Printf("Error getting balance of currency0 after swap: %v", err)
@@ -169,14 +184,27 @@ func SwapPermit(c *gin.Context) {
 		return
 	}
 
+	// Calculate balance changes
 	delta0 := new(big.Int).Sub(balance0After, balance0Before)
 	delta1 := new(big.Int).Sub(balance1After, balance1Before)
 
+	// Return success response with transaction details
 	c.JSON(200, gin.H{
-		"txHash":         signedTx.Hash().Hex(),
-		"message":        "Swap with permit initiated successfully",
-		"balancesBefore": gin.H{"currency0": balance0Before.String(), "currency1": balance1Before.String()},
-		"balancesAfter":  gin.H{"currency0": balance0After.String(), "currency1": balance1After.String()},
-		"deltaBalances":  gin.H{"currency0": delta0.String(), "currency1": delta1.String()},
+		"txHash":  signedTx.Hash().Hex(),
+		"message": "Swap with permit initiated successfully",
+		"balances": gin.H{
+			"before": gin.H{
+				"currency0": balance0Before.String(),
+				"currency1": balance1Before.String(),
+			},
+			"after": gin.H{
+				"currency0": balance0After.String(),
+				"currency1": balance1After.String(),
+			},
+			"delta": gin.H{
+				"currency0": delta0.String(),
+				"currency1": delta1.String(),
+			},
+		},
 	})
 }
